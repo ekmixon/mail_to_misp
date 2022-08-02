@@ -81,7 +81,6 @@ if __name__ == '__main__':
             if not args.event:
                 mail2misp.add_event()
 
-        syslog.syslog("Job finished.")
     else:
         syslog.syslog("Running standard mail2misp")
         mail2misp = Mail2MISP(misp_url, misp_key, misp_verifycert, config=config, urlsonly=args.event)
@@ -99,4 +98,5 @@ if __name__ == '__main__':
 
         if not args.event:
             mail2misp.add_event()
-        syslog.syslog("Job finished.")
+
+    syslog.syslog("Job finished.")

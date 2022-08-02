@@ -124,8 +124,9 @@ class Mail2MISP():
 
     def email_from_spamtrap(self):
         '''The email comes from a spamtrap and should be attached as-is.'''
-        raw_body = self.original_mail.get_body(preferencelist=('html', 'plain'))
-        if raw_body:
+        if raw_body := self.original_mail.get_body(
+            preferencelist=('html', 'plain')
+        ):
             self.clean_email_body = html.unescape(raw_body.get_payload(decode=True).decode('utf8', 'surrogateescape'))
         else:
             self.clean_email_body = ''
@@ -157,7 +158,6 @@ class Mail2MISP():
                                 f_object.add_reference(vt_object.uuid, 'analysed-with')
                             except InvalidMISPObject as e:
                                 print(e)
-                                pass
                         self.misp_event.add_object(f_object)
                         if main_object:
                             self.misp_event.add_object(main_object)
@@ -170,8 +170,9 @@ class Mail2MISP():
         return email_object
 
     def process_email_body(self):
-        mail_as_bytes = self.original_mail.get_body(preferencelist=('html', 'plain')).get_payload(decode=True)
-        if mail_as_bytes:
+        if mail_as_bytes := self.original_mail.get_body(
+            preferencelist=('html', 'plain')
+        ).get_payload(decode=True):
             self.clean_email_body = html.unescape(mail_as_bytes.decode('utf8', 'surrogateescape'))
             # Check if there are config lines in the body & convert them to a python dictionary:
             #   <config.body_config_prefix>:<key>:<value> => {<key>: <value>}
@@ -290,10 +291,7 @@ class Mail2MISP():
                 if email_object:
                     email_object.add_reference(attribute.uuid, 'contains')
             elif domainname in self.config.externallist or self.urlsonly:  # External analysis
-                if self.urlsonly:
-                    comment = self.subject + f" (from: {self.sender})"
-                else:
-                    comment = ""
+                comment = f"{self.subject} (from: {self.sender})" if self.urlsonly else ""
                 attribute = self.misp.add_attribute(self.urlsonly, {"type": 'link', "value": entry, "category": 'External analysis',
                                                     "to_ids": False, "comment": comment})
                 for tag in self.config.tlptags:
@@ -315,19 +313,14 @@ class Mail2MISP():
                     if is_ip(hostname):
                         attribute = self.misp_event.add_attribute('url', entry, to_ids=False,
                                                                   enforceWarninglist=self.config.enforcewarninglist)
-                        if email_object:
-                            email_object.add_reference(attribute.uuid, 'contains')
-                    else:
-                        if resource_path:  # URL has path, ignore warning list
-                            attribute = self.misp_event.add_attribute('url', entry, to_ids=ids_flag,
-                                                                      enforceWarninglist=False, comment=comment)
-                            if email_object:
-                                email_object.add_reference(attribute.uuid, 'contains')
-                        else:  # URL has no path
-                            attribute = self.misp_event.add_attribute('url', entry, to_ids=ids_flag,
-                                                                      enforceWarninglist=self.config.enforcewarninglist, comment=comment)
-                            if email_object:
-                                email_object.add_reference(attribute.uuid, 'contains')
+                    elif resource_path:  # URL has path, ignore warning list
+                        attribute = self.misp_event.add_attribute('url', entry, to_ids=ids_flag,
+                                                                  enforceWarninglist=False, comment=comment)
+                    else:  # URL has no path
+                        attribute = self.misp_event.add_attribute('url', entry, to_ids=ids_flag,
+                                                                  enforceWarninglist=self.config.enforcewarninglist, comment=comment)
+                    if email_object:
+                        email_object.add_reference(attribute.uuid, 'contains')
                     if self.config.sighting:
                         self.sightings_to_add.append((entry, self.config.sighting_source))
 
@@ -343,8 +336,7 @@ class Mail2MISP():
                     syslog.syslog(hostname)
 
                 comment = ''
-                port = self.f.get_port()
-                if port:
+                if port := self.f.get_port():
                     port = port
                     comment = f'on port: {port}'
 
